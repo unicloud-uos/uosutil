@@ -2,10 +2,12 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"os"
 
 	"github.com/uosutil/cmd"
+	"github.com/uosutil/config"
 	"github.com/urfave/cli"
 )
 
@@ -14,7 +16,7 @@ type Option struct {
 	Force     bool
 }
 
-var global Option
+var Global Option
 
 func main() {
 	app := cli.NewApp()
@@ -31,12 +33,12 @@ func main() {
 		cli.BoolFlag{
 			Name:        "r,recursive",
 			Usage:       "Recursive upload, download or removal.",
-			Destination: &global.Recursive,
+			Destination: &Global.Recursive,
 		},
 		cli.BoolFlag{
 			Name:        "f,force",
 			Usage:       "Force overwrite and other dangerous operations.",
-			Destination: &global.Force,
+			Destination: &Global.Force,
 		},
 	}
 
@@ -45,25 +47,35 @@ func main() {
 			Name:  "put",
 			Usage: "Put file into bucket \n\t    uosutil put FILE [FILE...] s3://BUCKET[/PREFIX]",
 			Action: func(c *cli.Context) error {
-				if len(c.Args()) <= 2 {
-					cli.ShowCommandHelp(cli.NewContext(app, nil, nil), "set")
+				cfg, err := config.NewConfig()
+				if err != nil {
+					fmt.Println("Put file err: ", err)
+					return err
+				}
+				if len(c.Args()) < 2 {
+					cli.ShowCommandHelp(cli.NewContext(app, nil, nil), "put")
 					return errors.New("Not enough parameters for command 'put'")
 				}
-				return cmd.PutFunc(c.Args())
+				return cmd.PutFunc(cfg, c.Args())
 			},
-			ArgsUsage: "<key> <value>",
+			Flags: app.Flags,
 		},
 		{
 			Name:  "get",
 			Usage: "Get file from bucket \n\t    uosutil get s3://BUCKET/OBJECT LOCAL_FILE",
 			Action: func(c *cli.Context) error {
-				if len(c.Args()) != 2 {
-					cli.ShowCommandHelp(cli.NewContext(app, nil, nil), "set")
+				cfg, err := config.NewConfig()
+				if err != nil {
+					fmt.Println("Put file err: ", err)
+					return err
+				}
+				if len(c.Args()) < 2 {
+					cli.ShowCommandHelp(cli.NewContext(app, nil, nil), "get")
 					return errors.New("Not enough parameters for command 'get'")
 				}
-				return cmd.GetFunc(c.Args())
+				return cmd.GetFunc(cfg, c.Args())
 			},
-			ArgsUsage: "<key> <value>",
+			Flags: app.Flags,
 		},
 	}
 
